@@ -3,7 +3,7 @@
 Plan a property-carrying truck trip and get back **two things**:
 
 1. A **map** of the route with markers for the pickup, dropoff, fuel stops and the FMCSA-required rest breaks.
-2. A set of **filled-out FMCSA Driver's Daily Log sheets** — one per day — with the duty-status line drawn on the 24-hour grid.
+2. A set of **filled-out FMCSA Driver's Daily Log sheets** (one per day) with the duty-status line drawn on the 24-hour grid.
 
 Given a current location, pickup, dropoff and how many hours of the 70-hour / 8-day cycle the driver has already used, the app computes a fully **Hours-of-Service compliant** schedule (11h driving limit, 14h window, 30-minute break, 10h resets, 70/8 cycle, 34h restart, fueling every 1,000 miles, 1h pickup/dropoff).
 
@@ -17,12 +17,12 @@ Given a current location, pickup, dropoff and how many hours of the 70-hour / 8-
 
 ## Features
 
-- **Connected route input** — start → pickup → dropoff timeline with address autocomplete (OpenStreetMap Nominatim) and a live Hours-of-Service cycle gauge.
-- **Free, keyless map & routing** — Leaflet + OpenStreetMap with real road distance/time from OSRM, all proxied through the API (no secrets, nothing to configure).
-- **FMCSA-audited HOS engine** — pure-Python, deterministic; splits the trip into duty segments across multiple days. Validated rule-by-rule against the official §395 guide.
-- **Hand-drawn SVG daily-log sheets** — one page per calendar day, each totalling exactly 24h, with City/State remarks at every duty change, the certification line, and carrier / driver / vehicle / shipping fields.
+- **Connected route input:** start → pickup → dropoff timeline with address autocomplete (OpenStreetMap Nominatim) and a live Hours-of-Service cycle gauge.
+- **Free, keyless map & routing:** Leaflet + OpenStreetMap with real road distance/time from OSRM, all proxied through the API (no secrets, nothing to configure).
+- **FMCSA-audited HOS engine:** pure-Python, deterministic; splits the trip into duty segments across multiple days. Validated rule-by-rule against the official §395 guide.
+- **Hand-drawn SVG daily-log sheets:** one page per calendar day, each totalling exactly 24h, with City/State remarks at every duty change, the certification line, and carrier / driver / vehicle / shipping fields.
 - **Export** to **PDF** (one page/day) or **PNG**, plus browser print.
-- **Trip history** — auto-saved; click a trip to **reload it into the form and replay its result**; **duplicate**, **delete**, **clear-all**, and **paginated**.
+- **Trip history:** auto-saved; click a trip to **reload it into the form and replay its result**; **duplicate**, **delete**, **clear-all**, and **paginated**.
 - Polished, responsive, accessible UI with independent-scrolling columns and loading/error states.
 
 ## Quick start
@@ -47,7 +47,7 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 
-# Frontend (http://localhost:5173) — in a second terminal
+# Frontend (http://localhost:5173), in a second terminal
 cd frontend
 npm install
 npm run dev
@@ -71,7 +71,7 @@ Property-carrying driver, 70 hr / 8 day, no adverse conditions (per the assessme
 | Fueling | A 15-min on-duty fuel stop at least every 1,000 miles. |
 | Pickup / dropoff | 1 hour on-duty at each. |
 
-The engine lives in [`backend/domain/services/hos_scheduler.py`](backend/domain/services/hos_scheduler.py) and is pure Python — no Django, no I/O — so it is fully unit-tested.
+The engine lives in [`backend/domain/services/hos_scheduler.py`](backend/domain/services/hos_scheduler.py) and is pure Python (no Django, no I/O), so it is fully unit-tested.
 
 ## Architecture (Clean Architecture)
 
@@ -104,7 +104,7 @@ frontend/
 
 **Backend** Django 5 · Django REST Framework · requests · gunicorn · WhiteNoise · Postgres (SQLite locally).
 **Frontend** React 18 · TypeScript · Vite · Leaflet / react-leaflet · TanStack Query · axios · html2canvas + jsPDF.
-**Maps** OpenStreetMap tiles · OSRM (routing) · Nominatim (geocoding) — all free and keyless.
+**Maps** OpenStreetMap tiles · OSRM (routing) · Nominatim (geocoding), all free and keyless.
 
 ## Tests
 
@@ -114,7 +114,7 @@ make test-backend      # cd backend && pytest        (unit · integration · e2e
 make test-frontend     # cd frontend && npm run test  (vitest) + npm run build
 ```
 
-The backend suite proves the HOS rules — limits are never exceeded, every daily log totals 24h, multi-day trips split correctly, fuel/pickup/dropoff are on-duty, and the 34h restart fires before the 70h cap. The frontend suite covers the pure SVG/format helpers.
+The backend suite proves the HOS rules: limits are never exceeded, every daily log totals 24h, multi-day trips split correctly, fuel/pickup/dropoff are on-duty, and the 34h restart fires before the 70h cap. The frontend suite covers the pure SVG/format helpers.
 
 ## API
 
@@ -155,18 +155,18 @@ Returns `{ summary, route, stops, dailyLogs, logMeta }` where `dailyLogs[].segme
 ## Modeling simplifications (intentional, FMCSA-conservative)
 
 The HOS engine was audited rule-by-rule against the official FMCSA §395 guide and is compliant. A few
-deliberate simplifications are worth calling out — each is **conservative** (it can only require *more*
+deliberate simplifications are worth calling out, and each is **conservative** (it can only require *more*
 rest than the law, never permit an illegal drive):
 
 - **70-hour cycle as a single bucket, not a rolling 8-day window** (§395.3(b)). The only cycle input is
   one scalar `currentCycleUsedHrs`, so the true "oldest day's hours drop off" recovery can't be
-  reconstructed. We accumulate on-duty time toward 70h and insert a 34-hour restart when it's reached —
-  conservative, and exact for trips that don't span a full 8 days.
+  reconstructed. We accumulate on-duty time toward 70h and insert a 34-hour restart when it's reached.
+  This is conservative, and exact for trips that don't span a full 8 days.
 - **Required rest is one ≥10-hour off-duty block** (§395.3(a)(1)); the §395.1(g) sleeper-berth split
-  provisions (7/3, 8/2) are not modeled — the simplest compliant option, so the "Sleeper Berth" log row
-  stays empty.
-- **30-minute breaks are modeled as off-duty**, so they don't count toward the 70h on-duty cycle —
-  correct, since the cap is on-duty time only.
+  provisions (7/3, 8/2) are not modeled, which is the simplest compliant option, so the "Sleeper Berth"
+  log row stays empty.
+- **30-minute breaks are modeled as off-duty**, so they don't count toward the 70h on-duty cycle, which
+  is correct since the cap is on-duty time only.
 - **Excluded by the assessment's assumptions:** the adverse-driving-conditions exception (§395.1(b)(1))
   and the short-haul exceptions (§395.1(e)) are intentionally not applied.
 - Single pickup and single dropoff; trip order is current → pickup → dropoff. Drive time comes from
