@@ -11,7 +11,6 @@ Given a current location, pickup, dropoff and how many hours of the 70-hour / 8-
 |---|---|
 | **Live app** | https://spotter-vert.vercel.app |
 | **API** | https://eld-trip-planner-api-3dxh.onrender.com |
-| **Demo video** | _Loom URL here_ |
 
 ---
 
